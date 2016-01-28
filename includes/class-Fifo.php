@@ -19,11 +19,11 @@
 
 trait FifoTrait {
 	public function prepareFifo( & $fifo ) {
-		if( @ $fifo->Fifo_ID ) {
-			$fifo->Fifo_ID = (int) $fifo->Fifo_ID;
+		if( @ $fifo->fifo_ID ) {
+			$fifo->fifo_ID = (int) $fifo->fifo_ID;
 		}
-		if( @ $fifo->Fifo_chat_id ) {
-			$fifo->Fifo_chat_id = (int) $fifo->Fifo_chat_id;
+		if( @ $fifo->fifo_chat_id ) {
+			$fifo->fifo_chat_id = (int) $fifo->fifo_chat_id;
 		}
 	}
 }

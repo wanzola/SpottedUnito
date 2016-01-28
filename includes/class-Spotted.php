@@ -19,11 +19,11 @@
 
 trait SpottedTrait {
 	public function prepareSpotted( & $spotted ) {
-		if( @ $spotted->Spotted_ID ) {
-			$spotted->Spotted_ID = (int) $spotted->Spotted_ID;
+		if( @ $spotted->spotted_ID ) {
+			$spotted->spotted_ID = (int) $spotted->spotted_ID;
 		}
-		if( @ $spotted->Spotted_chat_id ) {
-			$spotted->Spotted_chat_id = (int) $spotted->Spotted_chat_id;
+		if( @ $spotted->spotted_chat_id ) {
+			$spotted->spotted_chat_id = (int) $spotted->spotted_chat_id;
 		}
 	}
 }
