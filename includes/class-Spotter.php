@@ -18,7 +18,7 @@
  */
 
 trait SpotterTrait {
-	public function prepareSpotter( & $spotter ) {
+	public static function prepareSpotter( & $spotter ) {
 		if( @ $spotter->spotter_ID ) {
 			$spotter->spotter_ID = (int) $spotter->spotter_ID;
 		}

@@ -44,16 +44,16 @@ function spotted_fifo($n = 1) {
 			"LIMIT %d",
 			$n
 		),
-		'SpottedSpotter'
+		'Fifo'
 	);
 
 	$n = count($fifo);
 
 	// First delete from the FIFO
-	for($i=0; $i<$n; $fifo[$i++]->deleteFromFifo() );
+	for($i=0; $i<$n; $fifo[$i++]->deleteFifoRowFromDB() );
 
 	// Then send messages
-	for($i=0; $i<$n; $fifo[$i++]->send() );
+	for($i=0; $i<$n; $fifo[$i++]->sendFifoRowViaTelegram() );
 
 	return $n;
 }
@@ -108,7 +108,7 @@ function apiRequest($method, $parameters) {
 	}
 
 	foreach($parameters as $key => &$val) {
-		// encoding to JSON array parameters, for example reply_markup
+		// Encoding to JSON array parameters, for example reply_markup
 		if( ! is_numeric($val) && ! is_string($val) ) {
 			$val = json_encode($val);
 		}

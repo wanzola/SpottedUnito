@@ -25,11 +25,13 @@ expect('db');
 
 define('INCLUDES', 'includes');
 
-// Telegram functions
-require ABSPATH . _ . INCLUDES . _ . 'telegram-functions.php';
+// On demand requests classes
+spl_autoload_register( function($c) {
+	$path = ABSPATH . _ . INCLUDES . _ . "class-$c.php";
+	if( is_file( $path ) ) {
+		require $path;
+        }
+} );
 
-// In the future this is an sql_register
-require ABSPATH . _ . INCLUDES . _ . 'class-Spotted.php';
-require ABSPATH . _ . INCLUDES . _ . 'class-Spotter.php';
-require ABSPATH . _ . INCLUDES . _ . 'class-Fifo.php';
-require ABSPATH . _ . INCLUDES . _ . 'class-SpottedSpotter.php';
+// General functions
+require ABSPATH . _ . INCLUDES . _ . 'functions.php';

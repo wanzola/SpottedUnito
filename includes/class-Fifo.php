@@ -17,21 +17,41 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+class_exists('Spotted');
+class_exists('Spotter');
+
 trait FifoTrait {
-	public function prepareFifo( & $fifo ) {
-		if( @ $fifo->fifo_ID ) {
-			$fifo->fifo_ID = (int) $fifo->fifo_ID;
-		}
-		if( @ $fifo->fifo_chat_id ) {
-			$fifo->fifo_chat_id = (int) $fifo->fifo_chat_id;
-		}
+
+	public function deleteFifoRowFromDB() {
+		expect('db');
+
+		$db = & $GLOBALS['db'];
+
+		$db->query( sprintf(
+			"DELETE FROM {$db->getTable('fifo')} " .
+			"WHERE spotted_ID = '%d' AND spotter_ID = '%d'",
+			$this->spotted_ID,
+			$this->spotter_ID
+		) );
+	}
+
+	public function sendFifoRowViaTelegram() {
+		apiRequest('sendMessage', [
+			'chat_id' => $this->spotter_chat_id,
+			'text'    => sprintf( _("Anonimo: %s"),
+				$this->spotted_message
+			)
+		] );
 	}
 }
 
 class Fifo {
+	use SpottedTrait;
+	use SpotterTrait;
 	use FifoTrait;
 
 	function __construct() {
-		self::prepareFifo($this);
+		self::prepareSpotted($this);
+		self::prepareSpotter($this);
 	}
 }
