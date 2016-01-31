@@ -72,20 +72,20 @@ function exec_curl_request($handle) {
 	$http_code = intval(curl_getinfo($handle, CURLINFO_HTTP_CODE));
 	curl_close($handle);
 
-	if ($http_code >= 500) {
+	if($http_code >= 500) {
 		// do not wat to DDOS server if something goes wrong
 		sleep(10);
 		return false;
-	} else if ($http_code != 200) {
+	} elseif($http_code !== 200) {
 		$response = json_decode($response, true);
 		error_log("Request has failed with error {$response['error_code']}: {$response['description']}\n");
-		if ($http_code == 401) {
+		if($http_code === 401) {
 			throw new Exception("Invalid access token provided");
 		}
 		return false;
 	} else {
 		$response = json_decode($response, true);
-		if (isset($response['description'])) {
+		if( isset($response['description']) ) {
 			error_log("Request was successfull: {$response['description']}\n");
 		}
 		$response = $response['result'];
@@ -125,4 +125,27 @@ function apiRequest($method, $parameters) {
 
 function is_command($text, $cmd) {
 	return strpos($text, $cmd) !== false;
+}
+
+function refresh_admin_keyboard($chat_id, $text) {
+	expect('db');
+	$db = & $GLOBALS['db'];
+
+	$keyboard = [];
+	$tojudge = $db->getResults("SELECT spotted_ID, spotted_message FROM {$db->getTable('spotted')} WHERE spotted_approved <> 1 ORDER BY spotted_datetime ASC LIMIT 30", 'Spotted');
+
+	foreach($tojudge as $value) {
+		$keyboard[] = [ str_truncate($value->spotted_message, 200) ];
+		$keyboard[] = [ "Pubblica " . $value->spotted_ID, "Elimina " . $value->spotted_ID ];
+	}
+	$keyboard[] = ["Termine lista"];
+
+	apiRequest('sendMessage', [
+		'chat_id' => WANZO,
+		'text' => $text,
+		'reply_markup' => [
+			'keyboard' => $keyboard,
+			'resize_keyboard' => true
+		]
+	] );
 }

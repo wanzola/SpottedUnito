@@ -29,7 +29,7 @@ trait FifoTrait {
 
 		$db->query( sprintf(
 			"DELETE FROM {$db->getTable('fifo')} " .
-			"WHERE spotted_ID = '%d' AND spotter_ID = '%d'",
+			"WHERE spotted_ID = %d AND spotter_ID = %d",
 			$this->spotted_ID,
 			$this->spotter_ID
 		) );

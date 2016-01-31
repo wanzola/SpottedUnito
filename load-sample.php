@@ -38,5 +38,8 @@ define('ABSPATH', __DIR__);
 define('DEBUG',   true);
 define('USE_DB_OPTIONS', false);
 
+// Administrator chat_id
+define('WANZO', 666);
+
 // Load Boz-PHP - Assuming that you have installed it in the right way
 require '/usr/share/boz-php-another-php-framework/load.php';

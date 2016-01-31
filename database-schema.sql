@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost
--- Generation Time: Jan 28, 2016 at 04:17 PM
+-- Generation Time: Jan 31, 2016 at 04:44 PM
 -- Server version: 5.5.38
 -- PHP Version: 5.4.45-1~dotdeb+6.1
 
@@ -42,10 +42,11 @@ CREATE TABLE IF NOT EXISTS `spotted` (
   `spotted_ID` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `spotted_datetime` datetime NOT NULL,
   `spotted_message` text NOT NULL,
+  `spotted_approved` tinyint(4) NOT NULL,
   `spotted_chat_id` int(10) NOT NULL COMMENT 'Created by Telegram chat_id',
   PRIMARY KEY (`spotted_ID`),
   KEY `spottedfifo_chat_id` (`spotted_chat_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=92 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
 
@@ -59,7 +60,7 @@ CREATE TABLE IF NOT EXISTS `spotter` (
   `spotter_datetime` datetime NOT NULL COMMENT 'Subscribed in date',
   PRIMARY KEY (`spotter_ID`),
   KEY `spottedsubscriber_chat_ID` (`spotter_chat_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=11 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
 --
 -- Constraints for dumped tables
@@ -71,4 +72,3 @@ CREATE TABLE IF NOT EXISTS `spotter` (
 ALTER TABLE `fifo`
   ADD CONSTRAINT `fifo_ibfk_1` FOREIGN KEY (`spotted_ID`) REFERENCES `spotted` (`spotted_ID`) ON DELETE CASCADE,
   ADD CONSTRAINT `fifo_ibfk_2` FOREIGN KEY (`spotter_ID`) REFERENCES `spotter` (`spotter_ID`) ON DELETE CASCADE;
-

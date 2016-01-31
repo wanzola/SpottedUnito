@@ -25,15 +25,17 @@ $content = file_get_contents('php://input');
 $update = json_decode($content, true);
 
 // Die if something doesn't go as expected
-isset( $update['message'], $update['message']['text'] )
+isset( $update['message'], $update['message']['text'], $update['message']['chat']['id'] )
 	|| die("What? A lamer? Do the fuck you want.");
+
+$chat_id = & $update['message']['chat']['id'];
 
 if( isset($update['message']['document']) ) {
 
 	// It's a document!
 
 	apiRequest('sendMessage', [
-		'chat_id' => $update['message']['chat']['id'],
+		'chat_id' => $chat_id,
 		'text' => "Il <b>file_id</b> del documento inviato è: ".$update['message']['document']['file_id'],
 		'parse_mode' => 'HTML',
 		'disable_web_page_preview' => true,
@@ -120,40 +122,60 @@ if( isset($update['message']['document']) ) {
 		if( strlen( $spotted ) === 0 ) {
 			apiRequest('sendMessage', [
 				'chat_id' => $message['chat']['id'],
-				'text' => _("Questo comando serve a mandare messaggi accazzo.\n Esempio:\n\n/spotted Dio Cane!")
+				'text' => _("Questo comando serve a mandare messaggi accazzo.\n Esempio:\n\n/spotted Dio Cane stronzo!")
 			] );
 		} else {
-			$spotted = str_truncate($spotted, 300, '...');
+			$spotted = str_truncate($spotted, 1000, '...');
 
 			$db->insertRow('spotted', [
 				new DBCol('spotted_datetime', 'NOW()', '-'),
 				new DBCol('spotted_message', $spotted, 's'),
-				new DBCol('spotted_chat_id', $message['chat']['id'], 'd')
+				new DBCol('spotted_chat_id', $message['chat']['id'], 'd'),
+				new DBCol('spotted_approved', 0, '-') // Not approved!
 			] );
-			$spotted_ID = $db->getLastInsertedID();
 
+			refresh_admin_keyboard($chat_id, $spotted);
+
+			$spotters = $db->getValue("SELECT COUNT(*) as count FROM {$db->getTable('spotter')}", 'count');
+			apiRequest('sendMessage', [
+				'chat_id' => $message['chat']['id'],
+				'text' => sprintf(
+					_("Sta roba è in coda di moderazione per esser mandata a *%d* persone:\n- «%s»."),
+					$spotters,
+					$spotted
+				),
+				'parse_mode' => 'markdown'
+			] );
+		}
+	} elseif( is_command($text, 'Pubblica') ) {
+		$spotted_ID = (int) trim( str_replace('Pubblica', '', $text) );
+
+		if($spotted_ID) {
+			$db->query( sprintf(
+				"UPDATE {$db->getTable('spotted')} SET spotted_approved = 1 WHERE spotted_ID = %d",
+				$spotted_ID
+			) );
 			$spotters = $db->getResults("SELECT spotter_ID FROM {$db->getTable('spotter')}", 'Spotter');
 			$fifo_rows = [];
 			foreach($spotters as $spotter) {
 				$fifo_rows[] = [$spotted_ID, $spotter->spotter_ID];
 			}
 			$db->insert('fifo', [
-					'spotted_ID' => 'd',
-					'spotter_ID' => 'd'
+				'spotted_ID' => 'd',
+				'spotter_ID' => 'd'
 				],
 				$fifo_rows
 			);
-
-			apiRequest('sendMessage', [
-				'chat_id' => $message['chat']['id'],
-				'text' => sprintf(
-					_("Sta roba sta per esser mandata a *%d* persone:\n- «%s»\n\nA me pare na gran cazzata... Però sarà fatto fra pochi istanti."),
-					count( $spotters ),
-					$spotted
-				),
-				'parse_mode' => 'markdown'
-			] );
 		}
+		refresh_admin_keyboard($chat_id, "Messaggio pubblicato");
+	} elseif( is_command($text, 'Elimina') ) {
+		$spotted_ID = (int) trim( str_replace("Elimina", '', $text) );
+
+		$spotted_ID && $db->query( sprintf(
+			"DELETE FROM {$db->getTable('spotted')} WHERE spotted_ID = %d",
+			$spotted_ID
+		) );
+		refresh_admin_keyboard($chat_id, "Messaggio eliminato");
 	} else {
 		apiRequest('sendMessage', [
 			'chat_id' => $message['chat']['id'],
@@ -164,4 +186,4 @@ if( isset($update['message']['document']) ) {
 }
 
 // At the end... Try sending some messages...
-spotted_fifo(4);
+spotted_fifo(3);
