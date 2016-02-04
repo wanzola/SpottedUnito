@@ -54,9 +54,9 @@ if( isset( $update['inline_query'] ) ) {
 				'id' => "1",
 				'title' => "Premi qua per presentare questo bot a qualcuno",
 				'message_text' => "Spotted, un fenomeno molto conosciuto ai giorni nostri, " .
-						"dove le persone possono inviare degli appelli anonimi, " .
-						"ora è arrivato anche su Telegram, per gli <b>studenti di UniTO</b>! " .
-						"\n <a href=\"telegram.me/spottedunitobot?start=byinline\">PREMI QUI</a>, e vieni a leggere le confessioni degli studenti!",
+					"dove le persone possono inviare degli appelli anonimi, " .
+					"ora è arrivato anche su Telegram, per gli <b>studenti di UniTO</b>! " .
+					"\n <a href=\"telegram.me/spottedunitobot?start=byinline\">PREMI QUI</a>, e vieni a leggere le confessioni degli studenti!",
 				'parse_mode' => 'HTML'
 			] ],
 			'cache_time' => 0
@@ -76,7 +76,7 @@ if( isset( $update['inline_query'] ) ) {
 
 		// Exists?
 		$exists = query_row( sprintf(
-			"SELECT 1 FROM {$GLOBALS[T]('spotter')} " .
+			"SELECT 1 FROM {$T('spotter')} " .
 			"WHERE spotter_chat_ID = %d",
 			$update['message']['chat']['id']
 		) );
@@ -88,21 +88,21 @@ if( isset( $update['inline_query'] ) ) {
 		] );
 
 		apiRequest('sendMessage', [
-	    'chat_id' => $update['message']['chat']['id'],
-	    'text' => "Benvenuto sul bot di <b>Spotted Unito</b>\n\n".
+			'chat_id' => $update['message']['chat']['id'],
+			'text' => "Benvenuto sul bot di <b>Spotted Unito</b>\n\n".
 				"Con questo bot, potrai inviare i tuoi appelli o confessioni anonimamente, a tutti coloro che seguono questo bot.\n".
 				"Per inviare uno spot, non ti resta altro che scrivere (indifferente se maiuscolo o minuscolo) <code>spotted messaggio</code>, dove al posto di <code>messaggio</code> dovrete scrivere".
 				" il testo desiderato. (Es. <code>spotted Un saluto a tutti!</code>)\n\nNB: attualmente non sono supportate le emoticon",
-	    'parse_mode' => "HTML",
-	    'disable_web_page_preview' => true
+			'parse_mode' => "HTML",
+			'disable_web_page_preview' => true
 	  	] );
 		apiRequest('sendMessage', [
-				'chat_id' => $update['message']['chat']['id'],
-				'text' => "Un messaggio di conferma apparirà successivamente. Da quel momento, il messaggio, appena ".
+			'chat_id' => $update['message']['chat']['id'],
+			'text' => "Un messaggio di conferma apparirà successivamente. Da quel momento, il messaggio, appena ".
 				"i moderatori avranno verificato che non contenga parole inappropriate (bestemmie, minacce, offese, ecc...), verrà pubblicato.".
 				"\n\nIn caso di necessità, premere su /help , oppure inviare un messaggio con <code>/help messaggio</code>.",
-				'parse_mode' => "HTML",
-				'disable_web_page_preview' => true
+			'parse_mode' => "HTML",
+			'disable_web_page_preview' => true
 		] );
 	} elseif( stripos($text, 'spotted')===0 ) {
 		$spotted = ltrim( str_ireplace('spotted', '', $text) );
@@ -110,7 +110,7 @@ if( isset( $update['inline_query'] ) ) {
 			apiRequest('sendMessage', [
 				'chat_id' => $update['message']['chat']['id'],
 				'text' => _("Il comando <code>spotted</code> è esatto. Tuttavia, per inviare uno spot, deve essere seguito da un messaggio.\n".
-						"Es. Spotted Chi da l'esame al posto mio domani?"),
+					"Es. Spotted Chi da l'esame al posto mio domani?"),
 				'parse_mode' => 'HTML'
 			] );
 		} else {
@@ -125,7 +125,7 @@ if( isset( $update['inline_query'] ) ) {
 
 			refresh_admin_keyboard($update['message']['chat']['id'], $spotted, $first_name, $last_name, $username);
 
-			$spotters = query_value("SELECT COUNT(*) as count FROM {$GLOBALS[T]('spotter')}", 'count');
+			$spotters = query_value("SELECT COUNT(*) as count FROM {$T('spotter')}", 'count');
 			apiRequest('sendMessage', [
 				'chat_id' => $update['message']['chat']['id'],
 				'text' => sprintf(
@@ -140,22 +140,22 @@ if( isset( $update['inline_query'] ) ) {
 
 		if($spotted_ID) {
 			query( sprintf(
-				"UPDATE " .
-					$GLOBALS[T]('spotted') .
-				" SET " .
+				"UPDATE {$T('spotted')} " .
+				"SET " .
 					"spotted_approved = 1 " .
 				"WHERE " .
 					"spotted_ID = %d",
 				$spotted_ID
 			) );
-			$spotters = query_results("SELECT spotter_ID FROM {$GLOBALS[T]('spotter')}", 'Spotter');
+			$spotters = query_results("SELECT spotter_ID FROM {$T('spotter')}", 'Spotter');
 			$fifo_rows = [];
 			foreach($spotters as $spotter) {
 				$fifo_rows[] = [$spotted_ID, $spotter->spotter_ID];
 			}
-			insert_values('fifo', [
-				'spotted_ID' => 'd',
-				'spotter_ID' => 'd'
+			insert_values('fifo',
+				[
+					'spotted_ID' => 'd',
+					'spotter_ID' => 'd'
 				],
 				$fifo_rows
 			);
@@ -165,7 +165,7 @@ if( isset( $update['inline_query'] ) ) {
 		$spotted_ID = (int) trim( str_replace("Elimina", '', $text) );
 
 		$spotted_ID && query( sprintf(
-			"DELETE FROM {$GLOBALS[T]('spotted')} WHERE spotted_ID = %d",
+			"DELETE FROM {$T('spotted')} WHERE spotted_ID = %d",
 			$spotted_ID
 		) );
 		refresh_admin_keyboard($update['message']['chat']['id'], "Messaggio eliminato");
@@ -174,16 +174,16 @@ if( isset( $update['inline_query'] ) ) {
 
 		if( strlen( $text ) === 0 ) {
 			apiRequest('sendMessage', [
-					'chat_id' => $update['message']['chat']['id'],
-					'text' => _("Per inviare un messaggio ai programmatori, scrivi <code>/help messaggio</code>.\n".
-							"(Es. /help Salve, non riesco a mandare uno spot perche'...)"),
-					'parse_mode' => 'HTML'
+				'chat_id' => $update['message']['chat']['id'],
+				'text' => _("Per inviare un messaggio ai programmatori, scrivi <code>/help messaggio</code>.\n".
+					"(Es. /help Salve, non riesco a mandare uno spot perche'...)"),
+				'parse_mode' => 'HTML'
 			] );
 		} else {
 			apiRequest('sendMessage', [
-					'chat_id' => WANZO,
-					'text' => _("E' stato richiesto un help con messaggio: ".$text."\nDa: ".$first_name." ".$last_name." @".$username." ".$chat_id),
-					'parse_mode' => 'HTML'
+				'chat_id' => WANZO,
+				'text' => _("E' stato richiesto un help con messaggio: ".$text."\nDa: ".$first_name." ".$last_name." @".$username." ".$chat_id),
+				'parse_mode' => 'HTML'
 			] );
 		}
 	} elseif( is_command($text, '/messaggio') ) {
@@ -197,7 +197,6 @@ if( isset( $update['inline_query'] ) ) {
 			'parse_mode' => "HTML"
 		] );
 	} else {
-
 		apiRequest('sendMessage', [
 			'chat_id' => $update['message']['chat']['id'],
 			'text' => _("Nessun comando disponibile con le parole <code>$text</code>. Digita o clicca su /start per rivedere le istruzioni."),
