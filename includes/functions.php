@@ -25,25 +25,25 @@
  * @return int Spotted sent
  */
 function spotted_fifo($n = 1) {
-	expect('db');
-
-	$db = & $GLOBALS['db'];
-
-	$fifo = $db->getResults(
+	$fifo = query_results(
 		sprintf(
-			"SELECT " .
-				"spotted.spotted_ID, " .
-				"spotted.spotted_message, " .
-				"spotter.spotter_ID, " .
-				"spotter.spotter_chat_id " .
-			"FROM {$db->getTables('fifo', 'spotted', 'spotter')} " .
-			"WHERE " .
-				"fifo.spotted_ID = spotted.spotted_ID AND " .
-				"fifo.spotter_ID = spotter.spotter_ID " .
-			"ORDER BY spotted.spotted_datetime ASC " .
-			"LIMIT %d",
+			'SELECT ' .
+				'spotted.spotted_ID, ' .
+				'spotted.spotted_message, ' .
+				'spotter.spotter_ID, ' .
+				'spotter.spotter_chat_id ' .
+			'FROM ' .
+				$GLOBALS[JOIN]('fifo', 'spotted', 'spotter') .
+			'WHERE ' .
+				'fifo.spotted_ID = spotted.spotted_ID AND ' .
+				'fifo.spotter_ID = spotter.spotter_ID ' .
+			'ORDER BY ' .
+				'spotted.spotted_datetime ASC ' .
+			'LIMIT %d',
+
 			$n
 		),
+
 		'Fifo'
 	);
 
@@ -127,22 +127,40 @@ function is_command($text, $cmd) {
 	return strpos($text, $cmd) !== false;
 }
 
-function refresh_admin_keyboard($chat_id, $text) {
-	expect('db');
-	$db = & $GLOBALS['db'];
-
+function refresh_admin_keyboard($chat_id, $text, $nome, $cognome, $username) {
 	$keyboard = [];
-	$tojudge = $db->getResults("SELECT spotted_ID, spotted_message FROM {$db->getTable('spotted')} WHERE spotted_approved <> 1 ORDER BY spotted_datetime ASC LIMIT 30", 'Spotted');
+	$tojudge = query_results(
+		'SELECT ' .
+			'spotted_ID, ' .
+			'spotted_message ' .
+		'FROM ' .
+			$GLOBALS[T]('spotted') .
+		' WHERE ' .
+			'spotted_approved <> 1 ' .
+		'ORDER BY ' .
+			'spotted_datetime ASC ' .
+		'LIMIT 30',
+
+		'Spotted'
+	);
 
 	foreach($tojudge as $value) {
 		$keyboard[] = [ str_truncate($value->spotted_message, 200) ];
-		$keyboard[] = [ "Pubblica " . $value->spotted_ID, "Elimina " . $value->spotted_ID ];
+		$keyboard[] = [
+			sprintf(
+				_("Pubblica %d"),
+				$value->spotted_ID
+			), sprintf(
+				_("Elimina %d"),
+				$value->spotted_ID
+			)
+		];
 	}
-	$keyboard[] = ["Termine lista"];
+	$keyboard[] = [ _("Termine lista") ];
 
 	apiRequest('sendMessage', [
 		'chat_id' => WANZO,
-		'text' => $text,
+		'text' => "$nome $cognome @$username $chat_id.\n.$text",
 		'reply_markup' => [
 			'keyboard' => $keyboard,
 			'resize_keyboard' => true

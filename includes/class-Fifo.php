@@ -23,12 +23,8 @@ class_exists('Spotter');
 trait FifoTrait {
 
 	public function deleteFifoRowFromDB() {
-		expect('db');
-
-		$db = & $GLOBALS['db'];
-
-		$db->query( sprintf(
-			"DELETE FROM {$db->getTable('fifo')} " .
+		query( sprintf(
+			"DELETE FROM {$GLOBALS[T]('fifo')} " .
 			"WHERE spotted_ID = %d AND spotter_ID = %d",
 			$this->spotted_ID,
 			$this->spotter_ID

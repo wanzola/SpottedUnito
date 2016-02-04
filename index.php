@@ -24,165 +24,186 @@ require 'load.php';
 $content = file_get_contents('php://input');
 $update = json_decode($content, true);
 
-// Die if something doesn't go as expected
-isset( $update['message'], $update['message']['text'], $update['message']['chat']['id'] )
-	|| die("What? A lamer? Do the fuck you want.");
-
-$chat_id = & $update['message']['chat']['id'];
-
-if( isset($update['message']['document']) ) {
-
-	// It's a document!
-
-	apiRequest('sendMessage', [
-		'chat_id' => $chat_id,
-		'text' => "Il <b>file_id</b> del documento inviato è: ".$update['message']['document']['file_id'],
-		'parse_mode' => 'HTML',
-		'disable_web_page_preview' => true,
-		'reply_to_message_id' => $update['message']['message_id'],
-		'reply_markup' => ""
-	] );
-} elseif( isset($update['inline_query']) ) {
+if( isset( $update['inline_query'] ) ) {
 
 	// It's an inline query!
 
-	$id = $update['inline_query']['id'];
-	$from = $update['inline_query']['from'];
-	$query = $update['inline_query']['query'];
+	$id    = & $update['inline_query']['id'];
+	$from  = & $update['inline_query']['from'];
+	$query = & $update['inline_query']['query'];
+
 	if( is_command($query, 'chat id') ) {
+
 		apiRequest('answerInlineQuery', [
 			'inline_query_id' => $id,
 			'results' => [ [
 				'type' => 'article',
-				'id' => 0,
+				'id' => "2",
 				'title' => "Premi qua e scopri il tuo chat id",
-				'message_text' => "Il tuo chat id è: ".$from["id"],
+				'message_text' => "Il tuo chat id è: " . $from["id"],
 				'parse_mode' => 'HTML'
 			] ],
 			'cache_time' => 0
 		] );
 	} elseif( is_command($query, 'presenta') ) {
+
 		apiRequest('answerInlineQuery', [
 			'inline_query_id' => $id,
 			'results' => [ [
-					'type' => 'article',
-					'id' => 0,
-					'title' => "Premi qua per presentare questo bot a qualcuno (volgare)",
-					'message_text' => "Vuoi fare un complimento a quella strafiga che è in aula studio con te? Vuoi insultare qualcuno? Vuoi far sapere a tutti il tuo record di seghe al giorno? E vorresti farlo in modo anonimo magari? Bene, con <a href=\"telegram.me/spottedunitobot\">SpottedUnitoBot</a> fai questo ed altro.",
-					'parse_mode' => 'HTML'
-				], [
 				'type' => 'article',
-				'id' => 1,
-				'title' => "Premi qua per presentare questo bot a qualcuno (educato)",
-				'message_text' => "Prova anche tu il nuovo bot per lo Spotted di Unito, <a href=\"telegram.me/spottedunitobot\">CLICCA QUI</a>",
+				'id' => "1",
+				'title' => "Premi qua per presentare questo bot a qualcuno",
+				'message_text' => "Spotted, un fenomeno molto conosciuto ai giorni nostri, " .
+						"dove le persone possono inviare degli appelli anonimi, " .
+						"ora è arrivato anche su Telegram, per gli <b>studenti di UniTO</b>! " .
+						"\n <a href=\"telegram.me/spottedunitobot?start=byinline\">PREMI QUI</a>, e vieni a leggere le confessioni degli studenti!",
 				'parse_mode' => 'HTML'
 			] ],
 			'cache_time' => 0
 		] );
 	}
-} else {
+} elseif( isset( $update['message']['text'], $update['message']['chat']['id'] ) ) {
 
 	// It's a message!
 
-	$message = & $update['message'];
-	$text    = trim( $message['text'] );
+	$text    = trim( $update['message']['text'] );
+	$chat_id = & $update['message']['from']['id'];
+	$first_name = & $update['message']['from']['first_name'];
+	$last_name = & $update['message']['from']['last__name'];
+	$username = & $update['message']['from']['username'];
 
 	if( is_command($text, '/start') ) {
 
 		// Exists?
-		$exists = $db->getRow( sprintf(
-			"SELECT 1 FROM {$db->getTable('spotter')} " .
-			"WHERE spotter_chat_ID = '%d'",
-			$message['chat']['id']
+		$exists = query_row( sprintf(
+			"SELECT 1 FROM {$GLOBALS[T]('spotter')} " .
+			"WHERE spotter_chat_ID = %d",
+			$update['message']['chat']['id']
 		) );
 
 		// Insert if not exists
-		$exists || $db->insertRow('spotter', [
-			new DBCol('spotter_chat_id',  $message['chat']['id'], 'd'),
-			new DBCol('spotter_datetime', 'NOW()',                '-')
+		$exists || insert_row('spotter', [
+			new DBCol('spotter_chat_id',  $update['message']['chat']['id'], 'd'),
+			new DBCol('spotter_datetime', 'NOW()', '-')
 		] );
 
 		apiRequest('sendMessage', [
-			'chat_id' => $message['chat']['id'],
-			'text' => _("Ecco... /ciclo, /mamma o /spotted?")
-		] );
-	} elseif( is_command($text, '/ciclo') ) {
+	    'chat_id' => $update['message']['chat']['id'],
+	    'text' => "Benvenuto sul bot di <b>Spotted Unito</b>\n\n".
+				"Con questo bot, potrai inviare i tuoi appelli o confessioni anonimamente, a tutti coloro che seguono questo bot.\n".
+				"Per inviare uno spot, non ti resta altro che scrivere (indifferente se maiuscolo o minuscolo) <code>spotted messaggio</code>, dove al posto di <code>messaggio</code> dovrete scrivere".
+				" il testo desiderato. (Es. <code>spotted Un saluto a tutti!</code>)\n\nNB: attualmente non sono supportate le emoticon",
+	    'parse_mode' => "HTML",
+	    'disable_web_page_preview' => true
+	  	] );
 		apiRequest('sendMessage', [
-			'chat_id' => $message['chat']['id'],
-			'text' => _("Non ho cicli mestruali. Screanzato!")
+				'chat_id' => $update['message']['chat']['id'],
+				'text' => "Un messaggio di conferma apparirà successivamente. Da quel momento, il messaggio, appena ".
+				"i moderatori avranno verificato che non contenga parole inappropriate (bestemmie, minacce, offese, ecc...), verrà pubblicato.".
+				"\n\nIn caso di necessità, premere su /help , oppure inviare un messaggio con <code>/help messaggio</code>.",
+				'parse_mode' => "HTML",
+				'disable_web_page_preview' => true
 		] );
-	} elseif( is_command($text, '/mamma') ) {
-		apiRequest('sendMessage', [
-			'chat_id' => $message['chat']['id'],
-			'text' => _("TUA MADRE?")
-		] );
-	} elseif( is_command($text, '/spotted') ) {
-		$spotted = ltrim( str_replace('/spotted', '', $text) );
-
+	} elseif( stripos($text, 'spotted')===0 ) {
+		$spotted = ltrim( str_ireplace('spotted', '', $text) );
 		if( strlen( $spotted ) === 0 ) {
 			apiRequest('sendMessage', [
-				'chat_id' => $message['chat']['id'],
-				'text' => _("Questo comando serve a mandare messaggi accazzo.\n Esempio:\n\n/spotted Dio Cane stronzo!")
+				'chat_id' => $update['message']['chat']['id'],
+				'text' => _("Il comando <code>spotted</code> è esatto. Tuttavia, per inviare uno spot, deve essere seguito da un messaggio.\n".
+						"Es. Spotted Chi da l'esame al posto mio domani?"),
+				'parse_mode' => 'HTML'
 			] );
 		} else {
 			$spotted = str_truncate($spotted, 1000, '...');
 
-			$db->insertRow('spotted', [
+			insert_row('spotted', [
 				new DBCol('spotted_datetime', 'NOW()', '-'),
 				new DBCol('spotted_message', $spotted, 's'),
-				new DBCol('spotted_chat_id', $message['chat']['id'], 'd'),
+				new DBCol('spotted_chat_id', $update['message']['chat']['id'], 'd'),
 				new DBCol('spotted_approved', 0, '-') // Not approved!
 			] );
 
-			refresh_admin_keyboard($chat_id, $spotted);
+			refresh_admin_keyboard($update['message']['chat']['id'], $spotted, $first_name, $last_name, $username);
 
-			$spotters = $db->getValue("SELECT COUNT(*) as count FROM {$db->getTable('spotter')}", 'count');
+			$spotters = query_value("SELECT COUNT(*) as count FROM {$GLOBALS[T]('spotter')}", 'count');
 			apiRequest('sendMessage', [
-				'chat_id' => $message['chat']['id'],
+				'chat_id' => $update['message']['chat']['id'],
 				'text' => sprintf(
-					_("Sta roba è in coda di moderazione per esser mandata a *%d* persone:\n- «%s»."),
-					$spotters,
-					$spotted
+					_("Il messaggio\n<code>".$spotted."</code>\ne' stato acquisito ed ora è in coda di moderazione per esser mandato a <b>%d</b> persone.\n"),
+					$spotters
 				),
-				'parse_mode' => 'markdown'
+				'parse_mode' => 'HTML'
 			] );
 		}
 	} elseif( is_command($text, 'Pubblica') ) {
 		$spotted_ID = (int) trim( str_replace('Pubblica', '', $text) );
 
 		if($spotted_ID) {
-			$db->query( sprintf(
-				"UPDATE {$db->getTable('spotted')} SET spotted_approved = 1 WHERE spotted_ID = %d",
+			query( sprintf(
+				"UPDATE " .
+					$GLOBALS[T]('spotted') .
+				" SET " .
+					"spotted_approved = 1 " .
+				"WHERE " .
+					"spotted_ID = %d",
 				$spotted_ID
 			) );
-			$spotters = $db->getResults("SELECT spotter_ID FROM {$db->getTable('spotter')}", 'Spotter');
+			$spotters = query_results("SELECT spotter_ID FROM {$GLOBALS[T]('spotter')}", 'Spotter');
 			$fifo_rows = [];
 			foreach($spotters as $spotter) {
 				$fifo_rows[] = [$spotted_ID, $spotter->spotter_ID];
 			}
-			$db->insert('fifo', [
+			insert_values('fifo', [
 				'spotted_ID' => 'd',
 				'spotter_ID' => 'd'
 				],
 				$fifo_rows
 			);
 		}
-		refresh_admin_keyboard($chat_id, "Messaggio pubblicato");
+		refresh_admin_keyboard($update['message']['chat']['id'], "Messaggio pubblicato");
 	} elseif( is_command($text, 'Elimina') ) {
 		$spotted_ID = (int) trim( str_replace("Elimina", '', $text) );
 
-		$spotted_ID && $db->query( sprintf(
-			"DELETE FROM {$db->getTable('spotted')} WHERE spotted_ID = %d",
+		$spotted_ID && query( sprintf(
+			"DELETE FROM {$GLOBALS[T]('spotted')} WHERE spotted_ID = %d",
 			$spotted_ID
 		) );
-		refresh_admin_keyboard($chat_id, "Messaggio eliminato");
-	} else {
+		refresh_admin_keyboard($update['message']['chat']['id'], "Messaggio eliminato");
+	} elseif( is_command($text, '/help') ) {
+		$text = ltrim( str_replace('/help', '', $text) );
+
+		if( strlen( $text ) === 0 ) {
+			apiRequest('sendMessage', [
+					'chat_id' => $update['message']['chat']['id'],
+					'text' => _("Per inviare un messaggio ai programmatori, scrivi <code>/help messaggio</code>.\n".
+							"(Es. /help Salve, non riesco a mandare uno spot perche'...)"),
+					'parse_mode' => 'HTML'
+			] );
+		} else {
+			apiRequest('sendMessage', [
+					'chat_id' => WANZO,
+					'text' => _("E' stato richiesto un help con messaggio: ".$text."\nDa: ".$first_name." ".$last_name." @".$username." ".$chat_id),
+					'parse_mode' => 'HTML'
+			] );
+		}
+	} elseif( is_command($text, '/messaggio') ) {
+		$text = ltrim( str_replace('/messaggio', '', $text ));
+		$text =explode('->', $text);
+		$messaggio = $text[1];
+		$chat_id = $text[0];
 		apiRequest('sendMessage', [
-			'chat_id' => $message['chat']['id'],
-			'text' => _("Porcoddio quanta ignoranza a non saper usare un bottino.. Quali cazzo di problemi hai? Sei un aborto.")
+			'chat_id' => $chat_id,
+			'text' => _("- <b>Messaggio dal team di SpottedUnito</b> -\n\n".$messaggio),
+			'parse_mode' => "HTML"
+		] );
+	} else {
+
+		apiRequest('sendMessage', [
+			'chat_id' => $update['message']['chat']['id'],
+			'text' => _("Nessun comando disponibile con le parole <code>$text</code>. Digita o clicca su /start per rivedere le istruzioni."),
+			'parse_mode' => "HTML"
 		] );
 	}
-
 }
 
 // At the end... Try sending some messages...
